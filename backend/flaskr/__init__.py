@@ -236,23 +236,29 @@ def create_app(test_config=None):
     """
     @app.route('/quizzes', methods=['POST'])
     def get_quizzes():
+
         try:
             body = request.get_json()
             #get previous question
-            previous_questions = body.get('previous_questions', None)
+            previous_questions = body.get('previous_questions', [])
             #get quiz category
             quiz_category = body.get('quiz_category', None)
             category_id = quiz_category['id']
             
             #Return all questions
             if category_id == 0:
-                questions = Question.query.filter(Question.id.notin_(previous_questions)).all()
+                questions = Question.query.all()
+                
             else:
-                questions = Question.query.filter( Question.id.notin_(previous_questions), Question.category == category_id).all()
-            question = None
-            if(questions):
-                question = random.choice(questions)
-
+                questions = Question.query.filter(Question.category == category_id).all()
+                
+            new_questions=[]
+            for question in questions:
+                if question.id not in previous_questions:
+                    new_questions.append(question)
+            
+            question = random.choice(new_questions)
+        
             return jsonify({
                 'success': True,
                 'question': question.format()
